@@ -12,7 +12,7 @@ import sys
 import torch
 from torch import nn
 from transformers import get_constant_schedule
-
+from tqdm import tqdm
 from . import evaluation
 from . import utils
 
@@ -30,6 +30,7 @@ class AS2Trainer():
             val_metric= 'P@1', #p@1, roc_auc, val_loss
             debug     = False,
             save_path = None,
+            save_path_hugginface = None,
             device    = 'cpu',
     ):
         assert val_metric in ['loss','val_loss','roc_auc','P@1','MAP','MRR','HIT@5','AUPC'], \
@@ -45,6 +46,7 @@ class AS2Trainer():
         self.val_metric= val_metric
         self.debug     = debug
         self.save_path = save_path
+        self.save_path_hugginface = save_path_hugginface
         self.device    = device
 
         
@@ -77,7 +79,7 @@ class AS2Trainer():
             y_true, y_scores = [], []
             
             self.model.train()
-            for ib, batch in enumerate(dataloader):
+            for ib, batch in tqdm(enumerate(dataloader), total=len(dataloader), colour='orange', unit_scale=True):
 
                 examples, labels = batch
                 #self.logger.debug('Input and batch size:')
@@ -132,8 +134,10 @@ class AS2Trainer():
                     #self.model.save(self.save_path)
                     if hasattr(self.model, 'module'):
                         self.model.module.save(self.save_path)
+                        self.model.module.to_hugginface().save_pretrained(self.save_path_hugginface)
                     else:
                         self.model.save(self.save_path)
+                        self.model.to_hugginface().save_pretrained(self.save_path_hugginface)
                     is_saved = ' (saved)'
 
             time_all = time.time() - time_all
@@ -162,7 +166,7 @@ class AS2Trainer():
         loss_va = 0.
         
         with torch.no_grad():
-            for Sb, Yb in dataloader_te: 
+            for Sb, Yb in tqdm(dataloader_te, total=len(dataloader_te), colour='cyan', unit_scale=True):
                 Sb = {k:v.to(self.device) for k,v in Sb.items()}
                 Yb = Yb.to(self.device)
                 output = self.model(**Sb)
