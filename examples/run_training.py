@@ -27,6 +27,7 @@ parser.add_argument('-b', '--batch_size',    default=32,   type=int,    help='gl
 parser.add_argument('-l', '--learningrate',  default=1e-5, type=float,  help='learning rate')
 parser.add_argument('-s', '--max_seq_length',default=128,  type=int,    help='max sequence length (256 for contextual models is sufficient)')
 parser.add_argument('-o', '--output_file',   default=None,              help='output file name')
+parser.add_argument('--output_file_huggingface',   default=None,         help='output file name for hugginface checkpoint')
 parser.add_argument('-p', '--patience',      default=5,    type=int,    help='earlystopping epochs')
 parser.add_argument('--warmup_peak',         default=.2,   type=float,  help='warmup peak in epochs')
 parser.add_argument('--debug',               action='store_true',       help='if true, shows debug information')
@@ -104,6 +105,7 @@ trainer = Trainer(
     val_metric= args.val_metric,
     debug     = args.debug,
     save_path = args.output_file,
+    save_path_huggingface = args.output_file_huggingface,
     device    = device,
 ).fit(dataloader_tr, dataloader_va, dataloaders_eval)
 print (len(dataloaders_eval))
