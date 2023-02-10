@@ -108,11 +108,13 @@ class AS2Trainer():
                     if self.accumulation_steps is not None and self.accumulation_steps > 1:
                         if ((ib + 1) % self.accumulation_steps == 0) or (ib + 1 == len(dataloader)):
                             scaler.step(self.optimizer)
-                            scaler.step(self.scheduler)
+                            #scaler.step(self.scheduler)
+                            self.scheduler.step()
                             scaler.update()
                     else:
                         scaler.step(self.optimizer)
-                        scaler.step(self.scheduler)
+                        #scaler.step(self.scheduler)
+                        self.scheduler.step()
                         scaler.update()
 
                 else:
