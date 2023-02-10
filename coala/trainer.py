@@ -95,7 +95,7 @@ class AS2Trainer():
                 labels = labels.to(self.device)
                 examples = {k:v.to(self.device) for k,v in examples.items()}
 
-                self.optimizer.zero_grad()
+
                 if self.use_mixed_precision:
                     with torch.cuda.amp.autocast():
                         outputs = self.model(**examples)
@@ -108,14 +108,14 @@ class AS2Trainer():
                     if self.accumulation_steps is not None and self.accumulation_steps > 1:
                         if ((ib + 1) % self.accumulation_steps == 0) or (ib + 1 == len(dataloader)):
                             scaler.step(self.optimizer)
-                            #scaler.step(self.scheduler)
                             self.scheduler.step()
                             scaler.update()
+                            self.optimizer.zero_grad()
                     else:
                         scaler.step(self.optimizer)
-                        #scaler.step(self.scheduler)
                         self.scheduler.step()
                         scaler.update()
+                        self.optimizer.zero_grad()
 
                 else:
 
@@ -129,9 +129,11 @@ class AS2Trainer():
                         if ((ib + 1) % self.accumulation_steps == 0) or (ib + 1 == len(dataloader)):
                             self.optimizer.step()
                             self.scheduler.step()
+                            self.optimizer.zero_grad()
                     else:
                         self.optimizer.step()
                         self.scheduler.step()
+                        self.optimizer.zero_grad()
 
 
 
