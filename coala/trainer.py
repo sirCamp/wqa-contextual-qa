@@ -32,6 +32,8 @@ class AS2Trainer():
             save_path = None,
             save_path_huggingface = None,
             device    = 'cpu',
+            accumulation_steps = None,
+            use_mixed_precision = False
     ):
         assert val_metric in ['loss','val_loss','roc_auc','P@1','MAP','MRR','HIT@5','AUPC'], \
             'Evaluation Metric not recognized: %s' % val_metric
@@ -47,7 +49,9 @@ class AS2Trainer():
         self.debug     = debug
         self.save_path = save_path
         self.save_path_huggingface = save_path_huggingface
-        self.device    = device
+        self.device    = device,
+        self.accumulation_steps = accumulation_steps
+        self.use_mixed_precision = use_mixed_precision
 
         
     def fit(self, dataloader, dataloader_va, dataloaders_eval=[]):
@@ -71,7 +75,10 @@ class AS2Trainer():
         if self.debug:
             self.logger.debug('THE TRAINER IS RUNNING IN DEBUG MODE!')
 
-            
+        scaler = None
+        if self.use_mixed_precision:
+            scaler = torch.cuda.amp.GradScaler()
+
         for epoch in range(1, self.epochs+1):
             time_epoch = time.time()
             time_all = time.time()
@@ -89,15 +96,42 @@ class AS2Trainer():
                 examples = {k:v.to(self.device) for k,v in examples.items()}
 
                 self.optimizer.zero_grad()
-                outputs = self.model(**examples)
+                if self.use_mixed_precision:
+                    with torch.cuda.amp.autocast():
+                        outputs = self.model(**examples)
+                        logits  = outputs[0]
+                        loss    = self.loss_fct(logits, labels)
 
-                logits  = outputs[0]
-                loss    = self.loss_fct(logits, labels) 
-                loss.backward()
-                loss_tr += loss.item()
+                    scaler.scale(loss).backward()
+                    loss_tr += loss.item()
 
-                self.optimizer.step()
-                self.scheduler.step()
+                    if self.accumulation_steps is not None and self.accumulation_steps > 1:
+                        if ((ib + 1) % self.accumulation_steps == 0) or (ib + 1 == len(dataloader)):
+                            scaler.step(self.optimizer)
+                            scaler.step(self.scheduler)
+                    else:
+                        scaler.step(self.optimizer)
+                        scaler.step(self.scheduler)
+
+                else:
+
+                    outputs = self.model(**examples)
+                    logits  = outputs[0]
+                    loss    = self.loss_fct(logits, labels)
+                    loss.backward()
+                    loss_tr += loss.item()
+
+                    if self.accumulation_steps is not None and self.accumulation_steps > 1:
+                        if ((ib + 1) % self.accumulation_steps == 0) or (ib + 1 == len(dataloader)):
+                            self.optimizer.step()
+                            self.scheduler.step()
+                    else:
+                        self.optimizer.step()
+                        self.scheduler.step()
+
+
+                if self.use_mixed_precision:
+                    scaler.update()
 
                 y_true.extend(labels)
                 y_scores.extend(logits[:,1].tolist())
@@ -164,16 +198,30 @@ class AS2Trainer():
         self.model.eval()
         y_true, y_score = [], []
         loss_va = 0.
-        
+
+        scaler = None
+        if self.use_mixed_precision:
+            scaler = torch.cuda.amp.GradScaler()
+
         with torch.no_grad():
             for Sb, Yb in tqdm(dataloader_te, total=len(dataloader_te), colour='cyan', unit_scale=True):
                 Sb = {k:v.to(self.device) for k,v in Sb.items()}
                 Yb = Yb.to(self.device)
-                output = self.model(**Sb)
-                logits = output[0]
 
-                loss = self.loss_fct(logits, Yb) 
-                loss_va += loss.item()
+                if self.use_mixed_precision:
+                    with torch.cuda.amp.autocast():
+                        output = self.model(**Sb)
+                        logits = output[0]
+
+                        loss = self.loss_fct(logits, Yb)
+                    loss_va += loss.item()
+
+                else:
+                    output = self.model(**Sb)
+                    logits = output[0]
+
+                    loss = self.loss_fct(logits, Yb)
+                    loss_va += loss.item()
 
                 y_true.extend(Yb.tolist())
                 y_score.extend(logits[:,1].tolist())

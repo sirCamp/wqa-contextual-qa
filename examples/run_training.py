@@ -33,6 +33,8 @@ parser.add_argument('--warmup_peak',         default=.2,   type=float,  help='wa
 parser.add_argument('--debug',               action='store_true',       help='if true, shows debug information')
 parser.add_argument('--val_metric',          default='P@1',             help='validation metric',
                     choices=['loss','val_loss','roc_auc','P@1','MAP','MRR','HIT@5','AUPC'])
+parser.add_argument("--accumulation_steps", default=None, type=int, help="Gradient accumulation steps")
+parser.add_argument('--use_mixed_precision', action='store_true',       help='if true, it uses fp16 for training')
 args = parser.parse_args()
 print(args)
 
@@ -107,7 +109,10 @@ trainer = Trainer(
     save_path = args.output_file,
     save_path_huggingface = args.output_file_huggingface,
     device    = device,
+    accumulation_steps = args.accumulation_steps,
+    use_mixed_precision = args.use_mixed_precision
 ).fit(dataloader_tr, dataloader_va, dataloaders_eval)
-print (len(dataloaders_eval))
 
-    
+
+tokenizer.save_pretrained(args.save_path_huggingface)
+print (len(dataloaders_eval))
