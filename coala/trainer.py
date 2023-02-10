@@ -49,7 +49,7 @@ class AS2Trainer():
         self.debug     = debug
         self.save_path = save_path
         self.save_path_huggingface = save_path_huggingface
-        self.device    = device,
+        self.device    = device
         self.accumulation_steps = accumulation_steps
         self.use_mixed_precision = use_mixed_precision
 
