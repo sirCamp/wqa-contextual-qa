@@ -83,7 +83,7 @@ class AS2Trainer():
             time_epoch = time.time()
             time_all = time.time()
             loss_tr = .0
-            y_true, y_scores = [], []
+            #y_true, y_scores = [], []
             
             self.model.train()
             for ib, batch in tqdm(enumerate(dataloader), total=len(dataloader), colour='yellow', unit_scale=True):
@@ -135,12 +135,8 @@ class AS2Trainer():
                         self.scheduler.step()
                         self.optimizer.zero_grad()
 
-
-
-
-
-                y_true.extend(labels)
-                y_scores.extend(logits[:,1].tolist())
+                #y_true.extend(labels)
+                #y_scores.extend(logits[:,1].tolist())
 
                 if self.debug and ib >2:
                     break
