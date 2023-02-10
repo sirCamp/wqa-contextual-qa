@@ -112,6 +112,7 @@ class AS2Trainer():
                     else:
                         scaler.step(self.optimizer)
                         scaler.step(self.scheduler)
+                    scaler.update()
 
                 else:
 
@@ -130,8 +131,8 @@ class AS2Trainer():
                         self.scheduler.step()
 
 
-                if self.use_mixed_precision:
-                    scaler.update()
+
+
 
                 y_true.extend(labels)
                 y_scores.extend(logits[:,1].tolist())
