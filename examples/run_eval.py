@@ -21,6 +21,7 @@ parser.add_argument('-w', '--workers',       default=0,    type=int,   help='num
 parser.add_argument('-b', '--batch_size',    default=32,   type=int,   help='global batch size')
 parser.add_argument('-s', '--max_seq_length',default=128,  type=int,   help='max sequence length (256 for contextual models is sufficient)')
 parser.add_argument('-o', '--output_file',   default=None,             help='output path if you want to store the answers and scores')
+parser.add_argument('--use_softmax',    action='store_true',      help='if true, scores will be softmaxed')
 parser.add_argument('--debug',               action='store_true',      help='if true, shows debug information')
 args = parser.parse_args()
 print(args)
@@ -64,7 +65,7 @@ dataloader_te = DataLoader(dataset_te, batch_size=args.batch_size, shuffle=False
 
 
 from coala import AS2Trainer as Trainer
-scores = Trainer(model, device=device).predict(dataloader_te)
+scores = Trainer(model, device=device, use_softmax=args.use_softmax).predict(dataloader_te)
 labels    = dataset_te.labels
 questions = dataset_te.questions
 

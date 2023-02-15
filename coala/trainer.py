@@ -10,6 +10,7 @@ import time
 
 import sys
 import torch
+from torch.nn import functional
 from torch import nn
 from transformers import get_constant_schedule
 from tqdm import tqdm
@@ -33,7 +34,8 @@ class AS2Trainer():
             save_path_huggingface = None,
             device    = 'cpu',
             accumulation_steps = None,
-            use_mixed_precision = False
+            use_mixed_precision = False,
+            use_softmax = False
     ):
         assert val_metric in ['loss','val_loss','roc_auc','P@1','MAP','MRR','HIT@5','AUPC'], \
             'Evaluation Metric not recognized: %s' % val_metric
@@ -52,6 +54,7 @@ class AS2Trainer():
         self.device    = device
         self.accumulation_steps = accumulation_steps
         self.use_mixed_precision = use_mixed_precision
+        self.use_softmax = use_softmax
 
         
     def fit(self, dataloader, dataloader_va, dataloaders_eval=[]):
@@ -226,7 +229,10 @@ class AS2Trainer():
                     loss_va += loss.item()
 
                 y_true.extend(Yb.tolist())
-                y_score.extend(logits[:,1].tolist())
+                if self.use_softmax == True:
+                    y_score.extend(functional.softmax(logits, dim=1)[:,1].tolist())
+                else:
+                    y_score.extend(logits[:, 1].tolist())
 
                 if self.debug:
                     break
