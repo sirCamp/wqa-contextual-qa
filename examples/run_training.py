@@ -114,5 +114,5 @@ trainer = Trainer(
 ).fit(dataloader_tr, dataloader_va, dataloaders_eval)
 
 
-tokenizer.save_pretrained(args.save_path_huggingface)
+tokenizer.save_pretrained(args.output_file_huggingface)
 print (len(dataloaders_eval))
