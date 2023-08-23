@@ -154,3 +154,100 @@ class AS2LocalOrdDataset(AS2Dataset):
             'attention_mask' : torch.tensor([1] * (len(ids_q)+len(ids_a)+len(ids_p)+len(ids_s)+4)),
             'position_ids'   : torch.arange(len(ids_q) + len(ids_a) + len(ids_p) + len(ids_s) + 4),
         }
+
+class AS2QQADataset(AS2Dataset):
+    '''
+       This class defines the AS2 dataset with local (re-ordered) context
+       The local ordered context is defined as
+       [cls] question [sep] answer [sep] prev sentence [sep] successive sentence
+       The priority order to fill the 512 tokens is:
+         question > answer > prev > successive
+    '''
+
+    def encode_example(self, row):
+        l = self.max_seq_len - 3
+
+        if 'input_question' in row:
+            ids_q = self.tokenize_segment(row['input_question'],   l)
+            ids_q2 = self.tokenize_segment(row['question'],     l - len(ids_q))
+            ids_a = self.tokenize_segment(row['answer'],   l - len(ids_q) - len(ids_q2))
+        elif 'q1' in row:
+            ids_q = self.tokenize_segment(row['q1'],   l)
+            ids_q2 = self.tokenize_segment(row['q2'],     l - len(ids_q))
+            ids_a = self.tokenize_segment(row['answer'],   l - len(ids_q) - len(ids_q2))
+        elif 'ctx_question' in row:
+            ids_q = self.tokenize_segment(row['question'],   l)
+            ids_q2 = self.tokenize_segment(row['ctx_question'],     l - len(ids_q))
+            ids_a = self.tokenize_segment(row['answer'],   l - len(ids_q) - len(ids_q2))
+        elif 'context' in row:
+            ids_q = self.tokenize_segment(row['question'], l)
+            ids_q2 = self.tokenize_segment(row['context'], l - len(ids_q))
+            ids_a = self.tokenize_segment(row['answer'], l - len(ids_q) - len(ids_q2))
+        else:
+            raise NotImplementedError('This method has to be implemented')
+
+        return {
+            'input_ids'      : torch.tensor([self.cls] + ids_q + [self.sep] + ids_q2 + [self.sep] + ids_a),
+            'token_type_ids' : torch.tensor([0] * (len(ids_q)+1) + [1] * (len(ids_q2)+1) + [2] * (len(ids_a)+1)),
+            'attention_mask' : torch.tensor([1] * (len(ids_q)+len(ids_q2)+len(ids_a)+3)),
+            'position_ids'   : torch.arange(len(ids_q) + len(ids_q2) + len(ids_a)+ 3),
+        }
+
+
+class AS2QAQDataset(AS2Dataset):
+    '''
+       This class defines the AS2 dataset with local (re-ordered) context
+       The local ordered context is defined as
+       [cls] question [sep] answer [sep] prev sentence [sep] successive sentence
+       The priority order to fill the 512 tokens is:
+         question > answer > prev > successive
+    '''
+
+    def encode_example(self, row):
+        l = self.max_seq_len - 3
+
+
+        if 'input_question' in row:
+            ids_q = self.tokenize_segment(row['input_question'], l)
+            ids_a = self.tokenize_segment(row['answer'], l - len(ids_q))
+            ids_q2 = self.tokenize_segment(row['question'], l - len(ids_q) - len(ids_a))
+        elif 'q1' in row:
+            ids_q = self.tokenize_segment(row['q1'], l)
+            ids_a = self.tokenize_segment(row['answer'], l - len(ids_q))
+            ids_q2 = self.tokenize_segment(row['q2'], l - len(ids_q) - len(ids_a))
+        elif 'ctx_question' in row:
+            ids_q = self.tokenize_segment(row['question'], l)
+            ids_a = self.tokenize_segment(row['answer'], l - len(ids_q))
+            ids_q2 = self.tokenize_segment(row['ctx_question'], l - len(ids_q) - len(ids_a))
+        elif 'context' in row:
+            ids_q = self.tokenize_segment(row['question'], l)
+            ids_a = self.tokenize_segment(row['answer'], l - len(ids_q))
+            ids_q2 = self.tokenize_segment(row['context'], l - len(ids_q) - len(ids_a))
+        else:
+            raise NotImplementedError('This method has to be implemented')
+
+        return {
+            'input_ids'      : torch.tensor([self.cls] + ids_q + [self.sep] + ids_a + [self.sep] + ids_q2),
+            'token_type_ids' : torch.tensor([0] * (len(ids_q)+1) + [1] * (len(ids_a)+1) + [2] * (len(ids_q2)+1)),
+            'attention_mask' : torch.tensor([1] * (len(ids_q)+len(ids_a)+len(ids_q2)+3)),
+            'position_ids'   : torch.arange(len(ids_q) + len(ids_a) + len(ids_q2)+ 3),
+        }
+
+
+class AS2BaseQQDataset(AS2Dataset):
+    '''
+       This class represents the simplest AS2 dataset.
+       An example is defined as a simple question/candidate pair
+       [cls] question [sep] candidate answer
+    '''
+
+    def encode_example(self, row):
+        ids_q = self.tokenize_segment(row['input_question'], self.max_seq_len - 2)
+        ids_a =	self.tokenize_segment(row['question'],   self.max_seq_len - 2 - len(ids_q))
+
+        return {
+            'input_ids'      : torch.tensor([self.cls] + ids_q + [self.sep] + ids_a),
+            'token_type_ids' : torch.tensor([0] * (len(ids_q)+1) + [1] * (len(ids_a)+1)),
+            'attention_mask' : torch.tensor([1] * (len(ids_q)+len(ids_a)+2)),
+            'position_ids'   : torch.arange(len(ids_q) + len(ids_a) + 2),
+        }
