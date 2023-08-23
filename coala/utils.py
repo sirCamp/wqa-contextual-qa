@@ -31,6 +31,12 @@ def dispatcher(context):
         return (models.LocalModelForAS2, datasets.AS2LocalDataset)
     elif context == 'local-ord':
         return (models.LocalOrdModelForAS2, datasets.AS2LocalOrdDataset)
+    elif context == 'qqa':
+        return (models.QQAModelForAS2, datasets.AS2QQADataset)
+    elif context == 'qaq':
+        return (models.QAQModelForAS2, datasets.AS2QAQDataset)
+    elif context == 'qq':
+        return (models.QQModelForAS2, datasets.AS2BaseQQDataset)    
     else:
         raise ValueError('Context type not recognized')
 
