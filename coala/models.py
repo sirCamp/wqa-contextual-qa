@@ -54,7 +54,10 @@ class ModelForAS2(nn.Module):
             self.transformer = AutoModelForSequenceClassification.from_pretrained(pretrained_model_name_or_path)
             if self.transformer.config.type_vocab_size < self.type_vocab_size:
                 logger.warning('The token-type embedding has only %d row(s). It is replaced with a new embedding layer with %d rows that will be trained from scratch.' % (self.transformer.config.type_vocab_size, self.type_vocab_size))
-                encoder = getattr(self.transformer, self.transformer.config.model_type)
+                model_type = self.transformer.config.model_type
+                if 'deberta' in model_type:
+                    model_type = 'deberta'
+                encoder = getattr(self.transformer, model_type)
                 encoder.embeddings.token_type_embeddings = nn.Embedding(self.type_vocab_size, self.transformer.config.hidden_size)
                 encoder.embeddings.token_type_embeddings.weight.data.normal_(mean=0.0, std=self.transformer.config.initializer_range)
                 self.transformer.config.type_vocab_size = self.type_vocab_size
@@ -88,6 +91,16 @@ class LocalModelForAS2(BaseModelForAS2):
 
     
 class LocalOrdModelForAS2(LocalModelForAS2):
+    pass
+
+class QQModelForAS2(BaseModelForAS2):
+    type_vocab_size = 2
+
+class QQAModelForAS2(BaseModelForAS2):
+    type_vocab_size = 3
+
+
+class QAQModelForAS2(QQAModelForAS2):
     pass
 
 
