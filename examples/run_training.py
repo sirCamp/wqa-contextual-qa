@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-m', '--model',         default='bert-base',       help='model name or path')
 parser.add_argument('-tok', '--tokenizer',   default=None,              help='tokenizer name or path (optional)')
 parser.add_argument('-x', '--context',       default='base',            help='context type',
-                    choices=['base','local', 'local-ord'])
+                    choices=['base','local', 'local-ord', 'qq','qaq','qqa'])
 parser.add_argument('-c', '--cuda',          default=-2,   type=int,    help='assigned gpu id, -1 means all, -2 means CPU')
 parser.add_argument('-t', '--training',      required=True,  nargs='+',
                     help='training data file(s). In case of multiple files, they are joined during training')
